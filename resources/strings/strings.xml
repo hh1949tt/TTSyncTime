@@ -1,0 +1,25 @@
+<strings>
+    <string id="AppName">TTSyncTime</string>
+
+    <!-- 默认资源（英文）：设备语言非中文时使用，避免出现方块字 -->
+    <string id="LabelUtc">UTC</string>
+    <string id="LabelRtc">RTC</string>
+    <string id="LabelGps">GPS</string>
+
+    <string id="StatusWaitGps">WAIT</string>
+    <string id="StatusSearching">SEARCH</string>
+    <string id="StatusGpsTimeout">TIMEOUT</string>
+    <string id="StatusGpsError">GPS ERR</string>
+    <string id="StatusChecking">CHECK</string>
+    <string id="StatusSyncOk">IN SYNC</string>
+    <string id="StatusNoSync">OFFSET</string>
+    <string id="StatusRtcInvalid">RTC ERR</string>
+    <string id="StatusDone">DONE</string>
+    <string id="StatusRetest">RETEST</string>
+
+    <string id="HintLast">LAST</string>
+    <string id="HintTimes">x</string>
+    <string id="HintAcc">ACC</string>
+    <string id="UnitMeter">m</string>
+    <string id="TimeUnknown">--:--:--</string>
+</strings>
