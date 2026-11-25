@@ -2,6 +2,7 @@ using Toybox.Application;
 using Toybox.Attention;
 using Toybox.Graphics;
 using Toybox.Lang;
+using Toybox.Math;
 using Toybox.Position;
 using Toybox.System;
 using Toybox.Time;
@@ -552,26 +553,38 @@ class TTSyncTimeView extends WatchUi.View {
             statusText = str(Rez.Strings.StatusSearching);
         }
 
-        // 右侧是采光窗，文字可用宽度只到圆环左缘（blockLeft 外约 63px＝0.36w）；
-        // 文案过长（换语言/改文案）自动降一级字号，避免被圆环盖住。
-        var statusFont = Graphics.FONT_TINY;
-        if (textWidth(dc, statusText, statusFont) > w * 0.36) {
-            statusFont = Graphics.FONT_XTINY;
-        }
-        dc.drawText(blockLeft, h * Y_STATUS, statusFont, statusText,
-            Graphics.TEXT_JUSTIFY_LEFT);
-
+        var subText = "";
         if (finished) {
-            dc.drawText(blockLeft, h * Y_SUB, Graphics.FONT_XTINY,
-                str(Rez.Strings.StatusRetest), Graphics.TEXT_JUSTIFY_LEFT);
+            subText = str(Rez.Strings.StatusRetest);
         } else if (gpsBaseMoment == null) {
-            dc.drawText(blockLeft, h * Y_SUB, Graphics.FONT_XTINY,
-                searchSeconds + "s", Graphics.TEXT_JUSTIFY_LEFT);
+            subText = searchSeconds + "s";
         } else if (gpsAccuracy != null) {
-            dc.drawText(blockLeft, h * Y_SUB, Graphics.FONT_XTINY,
-                str(Rez.Strings.HintAcc) + " " + formatAccuracy(gpsAccuracy) +
-                str(Rez.Strings.UnitMeter),
-                Graphics.TEXT_JUSTIFY_LEFT);
+            subText = str(Rez.Strings.HintAcc) + " " + formatAccuracy(gpsAccuracy) +
+                str(Rez.Strings.UnitMeter);
+        }
+
+        // 表头两行的横向安全区间：左边是八角屏的左斜边，右边是采光窗圆环左缘。
+        // 中文文案（搜索卫星 / 时间一致）比英文宽一截，若像时钟那样左对齐到
+        // blockLeft，末字会被圆环压住；所以表头改为在这条区间里**居中**，
+        // 并且两行共用同一档字号 —— TINY 放不下就一起降到 XTINY。
+        var bandLeft = w * 0.055;
+        var bandRight = ringLeftAt(h * Y_STATUS + h * 0.11, w, h) - w * 0.02;
+        var bandWidth = bandRight - bandLeft;
+        var bandCx = (bandLeft + bandRight) / 2;
+
+        var hdrFont = Graphics.FONT_TINY;
+        var fitWidth = bandWidth - w * 0.03;
+        if (textWidth(dc, statusText, hdrFont) > fitWidth or
+            textWidth(dc, subText, hdrFont) > fitWidth) {
+            hdrFont = Graphics.FONT_XTINY;
+        }
+
+        dc.drawText(bandCx, h * Y_STATUS, hdrFont, statusText,
+            Graphics.TEXT_JUSTIFY_CENTER);
+
+        if (subText != "") {
+            dc.drawText(bandCx, h * Y_SUB, hdrFont, subText,
+                Graphics.TEXT_JUSTIFY_CENTER);
         }
 
         // 三行时钟（整体在采光窗以下：圆窗外缘最低到 0.42h，首行留约 2px 间距）
@@ -594,6 +607,31 @@ class TTSyncTimeView extends WatchUi.View {
             }
             dc.drawText(cx, h * Y_RESULT, Graphics.FONT_XTINY, hist,
                 Graphics.TEXT_JUSTIFY_CENTER);
+        }
+    }
+
+    // 采光窗圆环在高度 y 处的左缘 x（圆心/外半径按 176×176 实测比例换算）。
+    // 圆窗在设备坐标里是圆心 (143.5, 31.5)、外半径 42.5 —— 圆环外缘会伸出屏幕，
+    // 所以不能用屏幕 bbox 求圆心，这里是之前用「左极点 + 下极点」几何法拟合的值。
+    function ringLeftAt(y, w, h) {
+        var ccx = w * 0.8153;   // 143.5 / 176
+        var ccy = h * 0.1790;   // 31.5 / 176
+        var rr = w * 0.2415;    // 42.5 / 176
+        var dy = y - ccy;
+
+        if (dy < 0) {
+            dy = -dy;
+        }
+
+        if (dy >= rr) {
+            return w;
+        }
+
+        try {
+            return ccx - Math.sqrt(rr * rr - dy * dy);
+        } catch (e) {
+            // 理论上不会走到这里；兜底给一个保守值，宁可窄一点也不压圆环
+            return w * 0.57;
         }
     }
 
